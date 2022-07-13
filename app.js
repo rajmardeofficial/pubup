@@ -60,22 +60,23 @@ let instance = new Razorpay({
 
 app.post("/createOrder/:id", (req, res) => {
   // const { amount, currency } = req.body;
-  const id = req.params;
+  const id = req.params.id;
   console.log(id);
   clubowner.findById(id, (err, result) => {
-    console.log(result);
     if (!err) {
+      // res.render("info", {
+      //   data: result,
+      // });
       let options = {
-        amount: result.entryfees, // amount in the smallest currency unit
+        amount: result.entryfees * 100, // amount in the smallest currency unit
         currency: "INR",
       };
       // console.log(amount, currency);
       instance.orders.create(options, function (err, order) {
         res.send(order);
       });
-      // console.log(result);
     } else {
-      console.log("something went wrong data was not fetched");
+      console.log(err);
     }
   });
 });
