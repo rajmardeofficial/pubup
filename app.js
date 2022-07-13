@@ -1,5 +1,7 @@
+require("dotenv").config();
 const express = require("express");
 const Razorpay = require("razorpay");
+const crypto = require("crypto");
 const bodyparser = require("body-parser");
 const request = require("request");
 const https = require("https");
@@ -14,6 +16,8 @@ const app = express();
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public/"));
 app.use(bodyparser.urlencoded({ extended: true }));
+const keySecret = process.env.KEY_SECRET;
+const keyId = process.env.KEY_ID;
 
 // Mongodb connection url
 mongoose.connect("mongodb://localhost:27017/clubs", { useNewUrlParser: true });
@@ -53,9 +57,12 @@ passport.deserializeUser(function (user, done) {
 });
 
 //razorpay logic goes here
+
+
+ 
 let instance = new Razorpay({
-  key_id: "rzp_test_zdzlPwPUae1Qzv",
-  key_secret: "RbJB4zzx59CY7jM0OEpNtzpM",
+  key_id: keyId,
+  key_secret: keySecret,
 });
 
 app.post("/createOrder/:id", (req, res) => {
@@ -74,11 +81,26 @@ app.post("/createOrder/:id", (req, res) => {
       // console.log(amount, currency);
       instance.orders.create(options, function (err, order) {
         res.send(order);
+        console.log(order);
       });
     } else {
       console.log(err);
     }
   });
+});
+
+app.post("/success", (req, res) => {
+  console.log(req.body);
+  let body = req.body.razorpay_order_id + "|" + req.body.razorpay_payment_id;
+  let expectedSignature = crypto
+    .createHmac("sha256", keySecret)
+    .update(body.toString())
+    .digest("hex");
+  console.log("sig received ", req.body.razorpay_signature);
+  console.log("sig generated ", expectedSignature);
+  if (expectedSignature === req.body.razorpay_signature)
+    response = { signatureIsValid: "true" };
+  res.send(response);
 });
 
 //Razorpay logic ends here
