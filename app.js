@@ -16,18 +16,18 @@ const app = express();
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public/"));
 app.use(bodyparser.urlencoded({ extended: true }));
-// const keySecret = process.env.KEY_SECRET;
-// const keyId = process.env.KEY_ID;
 
-// Mongodb connection url
-// mongoose.connect("mongodb://localhost:27017/clubs", { useNewUrlParser: true });
-mongoose.connect(
-  "mongodb+srv://rajmarde:Rajmarde%407020@cluster0.qfhtg.mongodb.net/?retryWrites=true&w=majority",
-  { useNewUrlParser: true }
-);
 
 const keyId = process.env.KEY_ID
 const keySecret = process.env.KEY_SECRET
+const dbCred = process.env.DB_CREDENTIALS
+// Mongodb connection url
+// mongoose.connect("mongodb://localhost:27017/clubs", { useNewUrlParser: true });
+mongoose.connect(
+  `mongodb+srv://${dbCred}@cluster0.qfhtg.mongodb.net/?retryWrites=true&w=majority`,
+  { useNewUrlParser: true }
+);
+
 
 const userSchema = new mongoose.Schema({
   firstName: String,
