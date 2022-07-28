@@ -11,23 +11,53 @@ const nodemailer = require("nodemailer");
 const session = require("express-session");
 const passport = require("passport");
 const passportLocalMongoose = require("passport-local-mongoose");
+const GoogleStrategy = require("passport-google-oauth2").Strategy;
+const cookieSession = require("cookie-session");
 
 const app = express();
+app.use(
+  cookieSession({
+    name: "google-auth-session",
+    keys: ["key1", "key2"],
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+passport.serializeUser((user, done) => {
+  done(null, user);
+});
+passport.deserializeUser(function (user, done) {
+  done(null, user);
+});
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID:
+        "44860116238-0nd3kkndvnpaf8nn42744ovdld3ivl81.apps.googleusercontent.com", // Your Credentials here.
+      clientSecret: "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", // Your Credentials here.
+      callbackURL: "http://localhost:3000/auth/callback",
+      passReqToCallback: true,
+    },
+    function (request, accessToken, refreshToken, profile, done) {
+      return done(null, profile);
+    }
+  )
+);
+
 app.set("view engine", "ejs");
 app.use(express.static(__dirname + "/public/"));
 app.use(bodyparser.urlencoded({ extended: true }));
 
-
-const keyId = process.env.KEY_ID
-const keySecret = process.env.KEY_SECRET
-const dbCred = process.env.DB_CREDENTIALS
+const keyId = process.env.KEY_ID;
+const keySecret = process.env.KEY_SECRET;
+const dbCred = process.env.DB_CREDENTIALS;
 // Mongodb connection url
 // mongoose.connect("mongodb://localhost:27017/clubs", { useNewUrlParser: true });
 mongoose.connect(
   `mongodb+srv://${dbCred}@cluster0.qfhtg.mongodb.net/?retryWrites=true&w=majority`,
   { useNewUrlParser: true }
 );
-
 
 const userSchema = new mongoose.Schema({
   firstName: String,
@@ -191,6 +221,44 @@ app.post("/login", function (req, res) {
   );
 });
 
-app.listen(process.env.PORT || 2000, function () {
+// Auth
+app.get(
+  "/auth",
+  passport.authenticate("google", { scope: ["email", "profile"] })
+);
+
+// Auth Callback
+app.get(
+  "/auth/callback",
+  passport.authenticate("google", {
+    successRedirect: "/auth/callback/success",
+    failureRedirect: "/auth/callback/failure",
+  })
+);
+
+//Success login handle
+
+app.get("/auth/callback", (req, res) => {
+  passport.authenticate("google", {
+    successRedirect: "/auth/callback/success",
+    failureRedirect: "/auth/callback/failure",
+  });
+});
+
+app.get("/auth/callback/success", (req, res) => {
+  if (!req.user) res.redirect("/auth/callback/failure");
+  res.send(req.user);
+});
+
+app.get("/auth/callback/failure", (req, res) => {
+  res.send("Error");
+});
+
+app.get('/gLogout', (req, res)=>{
+  req.session = null
+  res.send({status: 'Logged out'})
+})
+
+app.listen(process.env.PORT || 3000, function () {
   console.log("server is running successfully on port made by om kadam");
 });
